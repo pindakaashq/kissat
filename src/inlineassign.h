@@ -1,6 +1,8 @@
 #ifndef _inlineassign_h_INLCUDED
 #define _inlineassign_h_INLCUDED
 
+#include <unistd.h>
+
 #ifdef FAST_ASSIGN
 #define kissat_assign kissat_fast_assign
 #endif

@@ -19,6 +19,9 @@
   } while (0)
 #endif
 
+#define LENGTH_RADIX 8
+#define WIDTH_RADIX (1 << LENGTH_RADIX)
+
 #define RADIX_SORT(VTYPE, RTYPE, N, V, RANK) \
   do { \
     const size_t N_RADIX = (N); \
@@ -29,8 +32,6 @@
 \
     VTYPE *V_RADIX = (V); \
 \
-    const size_t LENGTH_RADIX = 8; \
-    const size_t WIDTH_RADIX = (1 << LENGTH_RADIX); \
     const RTYPE MASK_RADIX = WIDTH_RADIX - 1; \
 \
     size_t COUNT_RADIX[WIDTH_RADIX]; \
