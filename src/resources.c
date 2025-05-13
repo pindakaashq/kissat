@@ -1,6 +1,11 @@
 #include "resources.h"
 
+#ifndef _MSC_VER
 #include <sys/time.h>
+#include <sys/resource.h>
+#else
+#include <winsock.h>
+#endif
 
 double kissat_wall_clock_time (void) {
   struct timeval tv;
@@ -18,7 +23,6 @@ double kissat_wall_clock_time (void) {
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/resource.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -55,6 +59,17 @@ uint64_t kissat_current_resident_set_size (void) {
 
 #else
 
+#ifdef _MSC_VER
+
+uint64_t kissat_current_resident_set_size (void) {
+  PROCESS_MEMORY_COUNTERS memCounter;
+  if (GetProcessMemoryInfo(GetCurrentProcess(), &memCounter, sizeof memCounter))
+    return (uint64_t)memCounter.WorkingSetSize;
+  return (uint64_t)0; /* get process mem info failed */
+}
+
+#else
+
 uint64_t kissat_current_resident_set_size (void) {
   char path[48];
   sprintf (path, "/proc/%" PRIu64 "/statm", (uint64_t) getpid ());
@@ -67,6 +82,7 @@ uint64_t kissat_current_resident_set_size (void) {
   return scanned == 2 ? rss * sysconf (_SC_PAGESIZE) : 0;
 }
 
+#endif
 #endif
 
 void kissat_print_resources (kissat *solver) {

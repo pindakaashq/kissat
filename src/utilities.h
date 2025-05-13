@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 typedef uintptr_t word;
 typedef uintptr_t w2rd[2];
 
@@ -74,17 +78,39 @@ static inline bool kissat_is_zero_or_power_of_two (word w) {
 }
 
 static inline unsigned kissat_leading_zeroes_of_unsigned (unsigned x) {
-  return x ? __builtin_clz (x) : sizeof (unsigned) * 8;
+  if (!x)
+    return sizeof (unsigned) * 8;
+#ifndef _MSC_VER
+  return __builtin_clz (x);
+#else
+#if defined(_M_ARM) || defined(_M_ARM64)
+  return (unsigned) _CountLeadingZeros (x);
+#else
+  return __lzcnt (x);
+#endif
+#endif
 }
 
 static inline unsigned kissat_leading_zeroes_of_word (word x) {
   if (!x)
     return sizeof (word) * 8;
+#ifndef _MSC_VER
   if (sizeof (word) == sizeof (unsigned long long))
     return __builtin_clzll (x);
   if (sizeof (word) == sizeof (unsigned long))
     return __builtin_clzl (x);
   return __builtin_clz (x);
+#else
+#if defined(_M_ARM64)
+  return (unsigned) _CountLeadingZeros64 ((unsigned __int64) x);
+#elif defined(_M_ARM)
+  return (unsigned) _CountLeadingZeros ((unsigned) x);
+#else
+  if (sizeof (word) == sizeof (unsigned __int64))
+    return __lzcnt64 ((unsigned __int64) x);
+  return __lzcnt ((unsigned) x);
+#endif
+#endif
 }
 
 static inline unsigned kissat_log2_floor_of_word (word x) {
@@ -101,11 +127,35 @@ static inline unsigned kissat_log2_ceiling_of_word (word x) {
 static inline unsigned kissat_leading_zeroes_of_uint64 (uint64_t x) {
   if (!x)
     return sizeof (uint64_t) * 8;
+#ifndef _MSC_VER
   if (sizeof (uint64_t) == sizeof (unsigned long long))
     return __builtin_clzll (x);
   if (sizeof (uint64_t) == sizeof (unsigned long))
     return __builtin_clzl (x);
   return __builtin_clz (x);
+#else
+#if defined(_M_ARM64)
+  return (unsigned) _CountLeadingZeros64 (x);
+#elif defined(_M_ARM)
+  uint32_t high = (uint32_t) (x >> 32);
+  unsigned bits = (unsigned) _CountLeadingZeros (high);
+  if (bits >= 32) {
+    uint32_t low = (uint32_t) x;
+    return bits + (unsigned) _CountLeadingZeros (low);
+  }
+  return bits;
+#elif defined(_M_X64)
+  return __lzcnt64 (x);
+#else
+  uint32_t high = (uint32_t) (x >> 32);
+  unsigned bits = __lzcnt (high);
+  if (bits >= 32) {
+    uint32_t low = (uint32_t) x;
+    return bits + __lzcnt (low);
+  }
+  return bits;
+#endif
+#endif
 }
 
 static inline unsigned kissat_log2_floor_of_uint64 (uint64_t x) {

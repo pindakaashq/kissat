@@ -56,6 +56,7 @@ static void (*volatile SIGALRM_handler) (int);
 static void (*volatile handle_alarm) (void);
 
 static void catch_alarm (int sig) {
+#ifndef _MSC_VER
   assert (sig == SIGALRM);
   if (caught_alarm)
     return;
@@ -66,21 +67,26 @@ static void catch_alarm (int sig) {
     raise (sig);
   assert (handler);
   handler ();
+#endif
 }
 
 void kissat_init_alarm (void (*handler) (void)) {
+#ifndef _MSC_VER
   assert (handler);
   assert (!caught_alarm);
   handle_alarm = handler;
   alarm_handler_set = true;
   assert (!SIGALRM_handler);
   SIGALRM_handler = signal (SIGALRM, catch_alarm);
+#endif
 }
 
 void kissat_reset_alarm (void) {
+#ifndef _MSC_VER
   assert (alarm_handler_set);
   assert (handle_alarm);
   alarm_handler_set = false;
   handle_alarm = 0;
   (void) signal (SIGALRM, SIGALRM_handler);
+#endif
 }
